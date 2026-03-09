@@ -1,0 +1,4 @@
+workspaces.json
+.env
+*.secret
+.DS_Store
