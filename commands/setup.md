@@ -1,5 +1,5 @@
 ---
-description: Initial setup guide for claude-code-config. Run after installation to configure Slack and GWS.
+description: Initial setup guide for claude-code-config. Run after installation to configure Slack and Google Workspace.
 ---
 
 # Setup Guide
@@ -42,21 +42,74 @@ chmod 600 ~/.config/slack-cli/workspaces.json
 
 7. Verify: `~/.claude/bin/slack-cli.sh workspaces`
 
-## 2. GWS CLI Setup (Optional)
+## 2. Google Workspace Setup (gogcli)
 
-Check if `gws` is installed:
+Check if `gog` is installed:
 
 ```bash
-which gws || echo "Not installed"
+which gog || echo "Not installed - run: brew install steipete/tap/gogcli"
 ```
 
-If not installed, guide the user through installation and OAuth setup.
+If installed, check auth status:
 
-## 3. Verify Installation
+```bash
+gog auth status
+```
+
+If no accounts are configured, guide the user:
+
+1. Add OAuth credentials (need a GCP Desktop App client):
+   ```bash
+   gog auth client add --name "my-client" --file /path/to/client_secret.json
+   ```
+
+2. Switch to file keyring for CLI use:
+   ```bash
+   gog auth keyring file
+   ```
+
+3. Set keyring password in environment:
+   ```bash
+   export GOG_KEYRING_PASSWORD="your-password"
+   ```
+
+4. Add Google accounts:
+   ```bash
+   gog auth add user@example.com --timeout 5m
+   ```
+
+5. Verify:
+   ```bash
+   gog cal events -a user@example.com --from today --to tomorrow
+   ```
+
+6. Add `GOG_KEYRING_PASSWORD` to `~/.claude/settings.json`:
+   ```json
+   {
+     "env": {
+       "GOG_KEYRING_PASSWORD": "your-password"
+     }
+   }
+   ```
+
+## 3. Daily Briefing Setup (Optional)
+
+If using the daily briefing command:
+
+1. Copy the example config:
+   ```bash
+   cp ~/.claude/commands/daily-briefing-config.example.json ~/.claude/commands/daily-briefing-config.json
+   ```
+
+2. Edit `~/.claude/commands/daily-briefing-config.json` with your contexts
+3. Test: run `/daily-briefing` in Claude Code
+
+## 4. Verify Installation
 
 ```bash
 # Check symlinks
 ls -la ~/.claude/bin/slack-cli.sh
-ls -la ~/.claude/skills/slack-check/
+ls -la ~/.claude/skills/gog-calendar/
 ls -la ~/.claude/rules/workflow.md
+ls -la ~/.claude/commands/daily-briefing.md
 ```
