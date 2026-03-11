@@ -141,6 +141,7 @@ Config fields:
 | `/gog-calendar` | View, create, update, delete Google Calendar events (multi-account) |
 | `/gog-sheets` | Read and write Google Sheets (multi-account) |
 | `/gog-docs` | Read, export, create Google Docs (multi-account) |
+| `/gog-gmail` | Search and read Gmail (multi-account, read-only) |
 | `/daily-briefing` | Morning briefing across all work contexts |
 
 ## Rules
