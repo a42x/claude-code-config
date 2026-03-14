@@ -1,6 +1,6 @@
 ---
 name: gog-docs
-description: Google Docs read/write via gogcli (gog). Multi-account support.
+description: "このスキルは、ユーザーが「Googleドキュメントを読んで」「ドキュメントをエクスポートして」「ドキュメントを作成して」「ドキュメントの内容を確認して」と依頼した際に使用。gogcli経由でGoogle Docsを操作する。マルチアカウント対応。"
 args:
   - name: action
     description: "Action to perform (e.g., read doc, export, create)"
@@ -8,6 +8,8 @@ args:
   - name: target
     description: "Document ID or URL"
     required: false
+allowed-tools: Bash
+version: "1.0.0"
 ---
 
 # Google Docs via gogcli

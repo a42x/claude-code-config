@@ -1,6 +1,8 @@
 ---
 name: slack-search
-description: Search Slack messages via API. Triggers on "slack search", "search slack", "find in slack".
+description: "このスキルは、ユーザーが「Slackを検索して」「Slackでメッセージを探して」「Slackで調べて」と依頼した際に使用。Slack APIでメッセージを検索する。"
+allowed-tools: Bash
+version: "1.0.0"
 ---
 
 # Slack Search

@@ -1,6 +1,6 @@
 ---
 name: gog-gmail
-description: Gmail read/search via gogcli (gog). Multi-account support. Read-only operations only.
+description: "このスキルは、ユーザーが「メールを検索して」「未読メールを確認して」「メールの内容を読んで」「Gmailを調べて」と依頼した際に使用。gogcli経由でGmailを読み取り専用で操作する。マルチアカウント対応。"
 args:
   - name: action
     description: "Action to perform (e.g., search, read message, check unread)"
@@ -8,6 +8,8 @@ args:
   - name: query
     description: "Gmail search query or message ID"
     required: false
+allowed-tools: Bash
+version: "1.0.0"
 ---
 
 # Gmail via gogcli (Read-Only)

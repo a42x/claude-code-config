@@ -1,6 +1,6 @@
 ---
 name: gog-calendar
-description: Google Calendar operations via gogcli (gog). Multi-account support.
+description: "このスキルは、ユーザーが「予定を確認して」「カレンダーに追加して」「空き時間を調べて」「イベントを作成して」「スケジュールを検索して」と依頼した際に使用。gogcli経由でGoogle Calendarを操作する。マルチアカウント対応。"
 args:
   - name: action
     description: "Action to perform (e.g., list events, create event, check free time)"
@@ -8,6 +8,8 @@ args:
   - name: details
     description: "Details such as date, attendees, title"
     required: false
+allowed-tools: Bash
+version: "1.0.0"
 ---
 
 # Google Calendar via gogcli

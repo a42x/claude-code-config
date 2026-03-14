@@ -1,6 +1,6 @@
 ---
 name: gog-sheets
-description: Google Sheets read/write via gogcli (gog). Multi-account support.
+description: "このスキルは、ユーザーが「スプレッドシートを読んで」「シートを更新して」「行を追加して」「スプレッドシートを作成して」「シートをエクスポートして」と依頼した際に使用。gogcli経由でGoogle Sheetsを操作する。マルチアカウント対応。"
 args:
   - name: action
     description: "Action to perform (e.g., read, update, append)"
@@ -8,6 +8,8 @@ args:
   - name: target
     description: "Spreadsheet ID or URL, and range (e.g., Sheet1!A1:C10)"
     required: false
+allowed-tools: Bash
+version: "1.0.0"
 ---
 
 # Google Sheets via gogcli

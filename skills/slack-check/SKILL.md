@@ -1,6 +1,8 @@
 ---
 name: slack-check
-description: Check latest messages in a Slack channel via API. Triggers on "slack check", "slack channel", "check slack".
+description: "このスキルは、ユーザーが「Slackを確認して」「チャンネルの最新メッセージを見て」「Slackチャンネルをチェックして」と依頼した際に使用。Slack APIでチャンネル履歴を取得する。"
+allowed-tools: Bash
+version: "1.0.0"
 ---
 
 # Slack Check

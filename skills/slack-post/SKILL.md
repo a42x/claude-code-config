@@ -1,6 +1,9 @@
 ---
 name: slack-post
-description: Post a message to Slack via API. Triggers on "slack post", "post to slack", "send slack message".
+description: "このスキルは、ユーザーが「Slackに投稿して」「Slackメッセージを送って」「Slackにポストして」と依頼した際に使用。Slack APIでメッセージを投稿する。投稿前にユーザー承認が必須。"
+disable-model-invocation: true
+allowed-tools: Bash
+version: "1.0.0"
 ---
 
 # Slack Post
