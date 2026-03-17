@@ -16,15 +16,16 @@ Each context has:
 - `name`, `github_org`, `slack_workspace`, `notion`
 - `google_account` (null = skip all Google services)
 - `calendar_id` (null = use "primary" if google_account exists)
+- `notion_meetings_db_id` (null = skip Notion meeting matching for completed events)
 - `gmail` (`enabled`, `unread_query`, `priority_query`, `max_threads`)
 
 ### Step 2: Prepare Date
 
 Run Bash to get today's date info:
 ```bash
-date "+%Y-%m-%d %a" && date -u "+%Y-%m-%dT00:00:00Z" && date -u -v+1d "+%Y-%m-%dT00:00:00Z" && date "+%Y-%m-%dT00:00:00+09:00" && date -v+1d "+%Y-%m-%dT00:00:00+09:00"
+date "+%Y-%m-%d %a" && date -u "+%Y-%m-%dT00:00:00Z" && date -u -v+1d "+%Y-%m-%dT00:00:00Z" && date "+%Y-%m-%dT00:00:00+09:00" && date -v+1d "+%Y-%m-%dT00:00:00+09:00" && date "+%Y-%m-%dT%H:%M:%S+09:00"
 ```
-This gives: display date, UTC today start, UTC tomorrow start, local today start, local tomorrow start.
+This gives: display date, UTC today start, UTC tomorrow start, local today start, local tomorrow start, **current local timestamp** (for classifying past vs upcoming events).
 
 ### Step 3: Parallel Data Collection
 
@@ -91,6 +92,8 @@ gog cal events "$CAL_ID" \
 If google_account is null, skip with message "(Google not configured - skipped)".
 If the command fails, show error but continue.
 
+**IMPORTANT**: Output the **raw JSON** from `gog cal events` in the `---CALENDAR---` block. Do NOT format it as human-readable text. The main conversation needs the structured JSON fields (`id`, `summary`, `start`, `end`, `attachments`, `conferenceData`, `htmlLink`) to classify completed vs upcoming events and match meeting logs. If the JSON is an empty array `[]`, output "No events".
+
 **Gmail** (only if google_account is not null AND gmail.enabled is true):
 ```bash
 # 1. Get unread count (base query)
@@ -117,7 +120,8 @@ Rendering rule:
 - If gmail.enabled is false or google_account is null, skip with "(Gmail not configured - skipped)"
 
 **Notion** (only if notion flag is set):
-Skip in automated collection. Just output: "(Notion: manual check required)"
+Output: "(Notion: collected separately via MCP)"
+Notion data will be collected in Step 3.5 using MCP tools.
 
 Each agent should return a structured text block like:
 ```
@@ -134,9 +138,94 @@ CONTEXT: <name>
 <notion results or "N/A">
 ```
 
+### Step 3.5: Notion Collection (MCP)
+
+For each context where the `notion` flag is truthy, collect Notion data using MCP tools **in the main conversation** (not in subagents). This can run **in parallel** with the Step 3 subagents.
+
+Use `mcp__notion__API-post-search` to get recently updated pages:
+
+```
+mcp__notion__API-post-search:
+  filter:
+    property: "object"
+    value: "page"
+  sort:
+    direction: "descending"
+    timestamp: "last_edited_time"
+  page_size: 10
+```
+
+For each result page, extract:
+- Page title: look for `properties.title`, `properties.Name`, or `properties.日報` (whichever has `type: "title"`) and extract `plain_text` from the title array
+- Last edited time: `last_edited_time`
+- Summary: if `properties.要約` exists with `rich_text`, show a truncated excerpt (~80 chars)
+
+Display rules:
+- Filter to only pages edited within the last 48 hours
+- Show up to 5 pages
+- For each page: title, last edited time, and summary excerpt (if available)
+- If no pages were edited recently, show "No recent updates"
+- If the MCP tool call fails, show the error but continue with other data
+
+Since Notion MCP uses a single workspace token (not per-context), run a single search and show results under all notion-enabled contexts.
+
+### Step 3.6: Notion Meetings Matching (MCP)
+
+For each context where `notion_meetings_db_id` is set, query the Notion Meetings DB for today's meeting pages. Run this **in parallel** with Step 3 subagents and Step 3.5.
+
+Use `mcp__notion__API-query-data-source`:
+
+```
+mcp__notion__API-query-data-source:
+  data_source_id: "<notion_meetings_db_id>"
+  filter:
+    property: "Event time"
+    date:
+      equals: "<YYYY-MM-DD>"   # today's date from Step 2
+  page_size: 10
+```
+
+For each result, extract:
+- **title**: `properties.Name` (title type) -> `plain_text`
+- **event_time**: `properties.Event time` -> `date.start`
+- **url**: `url` field (Notion page URL)
+- **summary**: `properties.要約` (rich_text) -> truncated ~80 chars (if present)
+
+Store the results as a list of `{title, url, summary}` objects for use in Step 4 matching.
+
+If `notion_meetings_db_id` is null or not set, skip this step.
+If the MCP call fails, show warning but continue with other data.
+
 ### Step 4: Format and Display
 
-Combine all agent results into a single formatted output:
+Combine all agent results + Notion meeting matches into a single formatted output.
+
+#### Step 4.1: Calendar Event Classification
+
+Parse the raw JSON from each subagent's `---CALENDAR---` block. For each event, compare the **current local timestamp** (from Step 2) with the event's `end.dateTime`:
+
+- `end.dateTime` <= current timestamp → **completed**
+- `end.dateTime` > current timestamp → **upcoming**
+- All-day events (`start.date` without time): treat as **upcoming** unless the date is in the past
+
+#### Step 4.2: Meeting Log Matching (completed events only)
+
+For each **completed** calendar event, check for meeting logs:
+
+**Gemini Meeting Notes (Google Docs attachments)**:
+1. Check the event's `attachments` array in the JSON
+2. If any attachment has a `fileUrl` containing `docs.google.com`, use that as the meeting notes link
+3. If no `attachments` field exists but `conferenceData` is present (= Google Meet event):
+   - Use `mcp__claude_ai_Google_Calendar__gcal_get_event` with `calendarId="primary"` and `eventId=<event id>` to fetch full details
+   - Check the returned `attachments` for Google Docs links
+   - If MCP call fails, silently skip (no error displayed)
+
+**Notion Meeting Page**:
+1. From the Step 3.6 results, find a matching Notion page for this calendar event
+2. Matching algorithm: extract significant words (3+ characters) from the calendar event `summary`, then check if 2+ of these words appear in the Notion page title (case-insensitive)
+3. If matched, use the Notion page `url`
+
+#### Step 4.3: Output Format
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -146,7 +235,14 @@ Combine all agent results into a single formatted output:
 ## Context A
 
 Calendar:
-  - 10:00-11:00 Team Standup
+  Completed:
+    [done] 10:00-10:30 橘定例MTG
+           Notion: https://www.notion.so/xxx
+    [done] 14:00-15:00 Crypto Garage <-> MynaWallet
+           Notes: https://docs.google.com/document/d/abc
+           Notion: https://www.notion.so/yyy
+  Upcoming:
+    - 16:00-17:00 Sprint Planning
 GitHub:
   - PR #123 "feat: add validation" (open)
   - Review requested: PR #456 by @teammate
@@ -165,9 +261,19 @@ Gmail: 2 unread
   - From: dev@example.com "Sprint review notes" (18:00)
 ```
 
+#### Calendar Display Rules
+
+- If **no completed events** exist: omit "Completed:" sub-header, show only upcoming events with `-` prefix
+- If **no upcoming events** exist: omit "Upcoming:" sub-header, show only completed events with `[done]` prefix
+- If **both types exist**: show "Completed:" and "Upcoming:" sub-headers as shown above
+- "Notes:" sub-line only appears when a Google Docs attachment was found
+- "Notion:" sub-line only appears when a matching Notion meeting page was found
+- Sub-lines (Notes/Notion) are indented under their parent event, aligned with the event summary text
+- All-day events show as "All day" (unchanged from current behavior)
+
 ### Important Notes
 
-- Calendar events: Show time (HH:MM-HH:MM) and summary. All-day events show as "All day".
+- Calendar events: Classified as completed (past end time) or upcoming. Completed events show `[done]` prefix with optional meeting log links (Google Docs, Notion). Upcoming events show time (HH:MM-HH:MM) and summary. All-day events show as "All day".
 - GitHub: Show PR/Issue number, title, and status. For review requests show author.
 - Slack: Show channel name and message excerpt (truncated to ~80 chars). Show time.
 - Gmail: Show "X unread" + up to 3 important threads (sender, subject, time). Keep concise.

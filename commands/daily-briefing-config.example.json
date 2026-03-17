@@ -5,6 +5,7 @@
       "github_org": "my-company",
       "slack_workspace": "my-company",
       "notion": null,
+      "notion_meetings_db_id": null,
       "google_account": "user@company.com",
       "calendar_id": "primary",
       "gmail": {
@@ -19,6 +20,7 @@
       "github_org": "my-oss-org",
       "slack_workspace": "oss-community",
       "notion": null,
+      "notion_meetings_db_id": null,
       "google_account": null,
       "calendar_id": null,
       "gmail": {
