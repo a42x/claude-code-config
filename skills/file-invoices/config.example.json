@@ -67,5 +67,13 @@
     }
   ],
   "url_download_watch_dir": "~/Downloads",
-  "url_download_timeout_seconds": 120
+  "url_download_timeout_seconds": 120,
+  "url_download_method": "playwright",
+  "url_platform_hints": {
+    "invoice.moneyforward.com": { "type": "moneyforward", "download_button": "ダウンロード" },
+    "app.bill-one.com": { "type": "billone", "download_button": "確認・ダウンロード" },
+    "invoice.secure.freee.co.jp": { "type": "freee", "download_button": "ダウンロード" },
+    "prtimes.box.com": { "type": "box", "requires_password": true },
+    "invoice.netbk.co.jp": { "type": "sbi", "requires_password": true }
+  }
 }

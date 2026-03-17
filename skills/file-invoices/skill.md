@@ -8,8 +8,8 @@ args:
   - name: account
     description: "Googleアカウント（デフォルト: hiro@a42x.co.jp）"
     required: false
-allowed-tools: Bash, mcp__claude_ai_Gmail__gmail_search_messages, mcp__claude_ai_Gmail__gmail_read_message
-version: "2.0.0"
+allowed-tools: Bash, mcp__claude_ai_Gmail__gmail_search_messages, mcp__claude_ai_Gmail__gmail_read_message, mcp__playwright__browser_navigate, mcp__playwright__browser_click, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_type, mcp__playwright__browser_wait_for_network_idle, mcp__playwright__browser_file_upload, mcp__playwright__browser_press_key, mcp__playwright__browser_select_option, mcp__playwright__browser_close
+version: "2.1.0"
 ---
 
 # 請求書ファイリング自動化スキル
@@ -193,24 +193,16 @@ gog drive mkdir "YYYY.M月" --parent 13y2jsuP6MjL27RLuZZp7YKmjMw4C5VGu -a <accou
 gog drive upload /tmp/invoices-filing/YYYYMM_取引先名.pdf --parent <フォルダID> --name "YYYYMM_取引先名_詳細.pdf" -a <account>
 ```
 
-### Step 7: URL型請求書の半自動ダウンロード
+### Step 7: URL型請求書の自動ダウンロード（Playwright MCP）
 
-URL型の請求書（MF請求書、Bill One、freee、PR TIMES Box、住信SBI等）は認証が必要なため、ブラウザ経由で半自動処理する。
+URL型の請求書（MF請求書、Bill One、freee、PR TIMES Box、住信SBI等）は Playwright MCP でブラウザ自動操作してダウンロードする。
 
-#### 7.1: Downloads フォルダの事前スナップショット
+**前提**: Playwright MCP が `allowed-tools` に含まれていること。MCP が利用不可の場合は Step 7F（フォールバック）へ。
 
-```bash
-ls -1t ~/Downloads/*.pdf 2>/dev/null > /tmp/invoices-filing/downloads-before.txt
-```
-
-config.json の `url_download_watch_dir` が指定されている場合はそのパスを使用。
-
-#### 7.2: URL一覧を提示し、ブラウザで一括オープン
-
-ユーザーに以下のような一覧を提示:
+#### 7.1: URL型請求書の一覧をユーザーに提示
 
 ```markdown
-以下のURLをブラウザで開きます。各タブでPDFをダウンロードしてください。
+以下のURL型請求書を Playwright で自動ダウンロードします。
 
 | # | 取引先 | 提案ファイル名 | 自動引落 |
 |---|--------|---------------|---------|
@@ -219,58 +211,100 @@ config.json の `url_download_watch_dir` が指定されている場合はその
 | 3 | 住信SBI | 202602_住信SBI_振込手数料.pdf | ✓ |
 ```
 
-承認後、`open` コマンドで一括オープン:
+#### 7.2: 各プラットフォームでの自動ダウンロード
+
+URL型請求書を1件ずつ処理する。各プラットフォームごとに操作手順が異なる:
+
+##### MoneyForward 請求書 (`invoice.moneyforward.com`)
+1. `browser_navigate` でURLを開く
+2. `browser_snapshot` でページ構造を確認
+3. ログイン画面が表示された場合 → ユーザーに「ブラウザでログインしてください」と案内し、ログイン完了を待つ
+4. 請求書ページが表示されたら「ダウンロード」ボタンを `browser_click` で押下
+5. `browser_wait_for_network_idle` でダウンロード完了を待つ
+
+##### Bill One (`app.bill-one.com`)
+1. `browser_navigate` でURLを開く
+2. `browser_snapshot` でページ構造を確認
+3. 「確認・ダウンロード」リンクまたはPDFダウンロードボタンを `browser_click`
+4. ダウンロード完了を待つ
+
+##### freee (`invoice.secure.freee.co.jp`)
+1. `browser_navigate` でURLを開く
+2. `browser_snapshot` でページ構造を確認
+3. PDFダウンロードボタンを `browser_click`
+4. ダウンロード完了を待つ
+
+##### PR TIMES Box (`prtimes.box.com`)
+1. `browser_navigate` でURLを開く
+2. パスワード入力が必要な場合 → 別メールのパスワードを `browser_type` で入力
+3. ダウンロードボタンを `browser_click`
+4. ダウンロード完了を待つ
+
+##### 住信SBI (`invoice.netbk.co.jp`)
+1. `browser_navigate` でURLを開く
+2. パスワード入力（別メールのパスワード）を `browser_type` で入力
+3. ログイン後、PDFダウンロードリンクを `browser_click`
+4. ダウンロード完了を待つ
+
+##### 汎用フロー（上記以外のプラットフォーム）
+1. `browser_navigate` でURLを開く
+2. `browser_snapshot` でページ構造を確認
+3. PDFダウンロードに見えるリンク/ボタンを探して `browser_click`
+4. うまくいかない場合はフォールバック（7F）へ
+
+#### 7.3: ダウンロードされたファイルの回収
+
+Playwright のダウンロードはデフォルトで `~/Downloads` に保存される。
 
 ```bash
-open "https://invoice.moneyforward.com/..."
-open "https://app.bill-one.com/..."
-# 各URLを順次開く
-```
-
-#### 7.3: ユーザーの完了待ち
-
-「ダウンロードが完了したら教えてください」と案内し、ユーザーの入力を待つ。
-
-#### 7.4: Downloads フォルダの差分検出
-
-```bash
+# ダウンロード前のスナップショットと比較して新規PDFを検出
 ls -1t ~/Downloads/*.pdf 2>/dev/null > /tmp/invoices-filing/downloads-after.txt
-
-# 差分（新しく追加された PDF ファイル）を検出
 comm -13 <(sort /tmp/invoices-filing/downloads-before.txt) <(sort /tmp/invoices-filing/downloads-after.txt)
 ```
 
-#### 7.5: ダウンロードされた PDF のマッチング
-
-新しいPDFファイルが見つかった場合、取引先を推定する:
-
-1. **ファイル名キーワード照合**: ダウンロードされたPDFのファイル名に取引先名マッピングのキーワードが含まれるか
-2. **ダウンロード時刻順**: open コマンドの実行順序との対応
-3. **推定不能時**: ユーザーに確認
-
-推定結果をユーザーに提示して確認:
-
-```markdown
-以下のマッチングで正しいですか？
-
-| ダウンロードされたファイル | → | リネーム後 |
-|--------------------------|---|-----------|
-| C-202603000070.pdf | → | 202603_FINOLAB家賃.pdf |
-| invoice_202602.pdf | → | 202602_津田.pdf |
+**重要**: Step 7.2 の開始前に事前スナップショットを取得しておく:
+```bash
+ls -1t ~/Downloads/*.pdf 2>/dev/null > /tmp/invoices-filing/downloads-before.txt
 ```
 
-#### 7.6: リネーム → アップロード
+#### 7.4: リネーム → アップロード
 
-確認後、リネームして Drive にアップロード:
+検出されたPDFを命名規則に従ってリネームし、Drive にアップロード:
 
 ```bash
 cp ~/Downloads/<detected_file>.pdf /tmp/invoices-filing/YYYYMM_取引先名.pdf
 gog drive upload /tmp/invoices-filing/YYYYMM_取引先名.pdf --parent <フォルダID> --name "YYYYMM_取引先名.pdf" -a <account>
 ```
 
-#### 7.7: 未取得分の報告
+#### 7.5: ブラウザを閉じる
 
-マッチしなかった、またはダウンロードされなかった請求書を報告する。
+全URLの処理完了後:
+```
+browser_close
+```
+
+#### 7F: フォールバック（Playwright 利用不可時）
+
+Playwright MCP が利用できない場合、または特定のURLで自動操作に失敗した場合:
+
+1. `open` コマンドでURLをブラウザに開く
+2. ユーザーに手動ダウンロードを依頼
+3. `~/Downloads` の差分検出で新規PDFを特定
+4. リネーム → アップロード
+
+```bash
+open "https://invoice.moneyforward.com/..."
+# ユーザーの完了入力を待つ
+```
+
+ユーザーへの表示:
+```markdown
+以下のURLは自動ダウンロードに失敗しました。ブラウザで手動ダウンロードしてください。
+完了したら教えてください。
+
+| # | 取引先 | URL | 提案ファイル名 |
+|---|--------|-----|---------------|
+```
 
 ### Step 8: 結果レポート
 
