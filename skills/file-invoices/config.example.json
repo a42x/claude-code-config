@@ -1,0 +1,71 @@
+{
+  "auto_debit_vendors": [
+    {
+      "short_name": "GCP-01C800",
+      "match_keywords": ["Google Payments", "Cloud Platform", "01C800"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "GCP-01A116",
+      "match_keywords": ["Google Payments", "Cloud Platform", "01A116"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "GoogleWorkspace",
+      "match_keywords": ["Google Payments", "Workspace"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "Slack",
+      "match_keywords": ["Slack"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "Figma",
+      "match_keywords": ["Figma"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "IVRy",
+      "match_keywords": ["IVRy"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "Cosense",
+      "match_keywords": ["Cosense", "Helpfeel"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "Blacksmith",
+      "match_keywords": ["Blacksmith"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "Alchemy",
+      "match_keywords": ["Alchemy"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "スマートラウンド",
+      "match_keywords": ["スマートラウンド"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "povo",
+      "match_keywords": ["povo"],
+      "note": "クレカ自動引き落とし"
+    },
+    {
+      "short_name": "UPSIDER",
+      "match_keywords": ["UPSIDER", "mfkessai"],
+      "note": "口座振替"
+    },
+    {
+      "short_name": "住信SBI",
+      "match_keywords": ["住信SBI", "netbk"],
+      "note": "振込手数料（口座控除）"
+    }
+  ],
+  "url_download_watch_dir": "~/Downloads",
+  "url_download_timeout_seconds": 120
+}

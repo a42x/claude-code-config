@@ -2,3 +2,4 @@ workspaces.json
 .env
 *.secret
 .DS_Store
+skills/file-invoices/config.json
