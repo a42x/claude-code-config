@@ -64,14 +64,39 @@
       "short_name": "住信SBI",
       "match_keywords": ["住信SBI", "netbk"],
       "note": "振込手数料（口座控除）"
+    },
+    {
+      "short_name": "中央総合法律事務所_顧問料",
+      "match_keywords": ["中央総合法律事務所"],
+      "note": "¥55,000の月額顧問料のみ自動引き落とし。超過分は都度振込",
+      "conditional": true
     }
   ],
-  "url_download_watch_dir": "~/Downloads",
+  "html_only_vendors": [
+    {
+      "short_name": "Figma",
+      "match_keywords": ["Figma", "figma.com"],
+      "capture_method": "screenshot",
+      "note": "HTML領収書のみ。PDFなし。メール本文をレンダリングしてスクリーンショット"
+    }
+  ],
+  "gmail_platform_searches": [
+    "from:no-reply@bill-one.com",
+    "from:figma.com",
+    "from:do_not_reply@moneyforward.com",
+    "from:payments-noreply@google.com",
+    "from:feedback@slack.com (invoice OR receipt OR 領収書 OR プラン)",
+    "from:bill@prtimes.co.jp",
+    "from:noreply@mfkessai.co.jp",
+    "from:no-reply@doc-issue.layerx.jp",
+    "from:stripe.com (領収書 OR receipt OR invoice)"
+  ],
+  "playwright_download_dir": ".playwright-mcp/",
+  "fallback_download_dir": "~/Downloads",
   "url_download_timeout_seconds": 120,
-  "url_download_method": "playwright",
   "url_platform_hints": {
-    "invoice.moneyforward.com": { "type": "moneyforward", "download_button": "ダウンロード" },
-    "app.bill-one.com": { "type": "billone", "download_button": "確認・ダウンロード" },
+    "invoice.moneyforward.com": { "type": "moneyforward", "download_button": "請求書" },
+    "app.bill-one.com": { "type": "billone", "download_button": "Download all", "download_format": "zip" },
     "invoice.secure.freee.co.jp": { "type": "freee", "download_button": "ダウンロード" },
     "prtimes.box.com": { "type": "box", "requires_password": true },
     "invoice.netbk.co.jp": { "type": "sbi", "requires_password": true }
