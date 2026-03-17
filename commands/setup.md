@@ -1,5 +1,5 @@
 ---
-description: Initial setup guide for claude-code-config. Run after installation to configure Slack and Google Workspace.
+description: Initial setup guide for claude-code-config. Run after installation to configure Slack, Google Workspace, and Tavily.
 ---
 
 # Setup Guide
@@ -92,7 +92,37 @@ If no accounts are configured, guide the user:
    }
    ```
 
-## 3. Daily Briefing Setup (Optional)
+## 3. Tavily MCP Setup (Research Skills)
+
+Required for: deep-research, docs-dive, fact-check, market-check, news-digest, security-check, trend-scan, web-research.
+
+Check if Tavily MCP is configured:
+
+```bash
+cat ~/.claude/settings.json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); t=d.get('mcpServers',{}).get('tavily',{}); print('Configured' if t else 'Not configured')"
+```
+
+If not configured:
+
+1. Get an API key from https://tavily.com (free tier available)
+2. Add the Tavily MCP server to `~/.claude/settings.json`:
+   ```json
+   {
+     "mcpServers": {
+       "tavily": {
+         "command": "npx",
+         "args": ["-y", "tavily-mcp@0.2.18"],
+         "env": {
+           "TAVILY_API_KEY": "tvly-YOUR_API_KEY_HERE"
+         }
+       }
+     }
+   }
+   ```
+3. Restart Claude Code to load the MCP server
+4. Verify: run `/web-research` with a test query
+
+## 4. Daily Briefing Setup (Optional)
 
 If using the daily briefing command:
 
@@ -104,12 +134,13 @@ If using the daily briefing command:
 2. Edit `~/.claude/commands/daily-briefing-config.json` with your contexts
 3. Test: run `/daily-briefing` in Claude Code
 
-## 4. Verify Installation
+## 5. Verify Installation
 
 ```bash
 # Check symlinks
 ls -la ~/.claude/bin/slack-cli.sh
 ls -la ~/.claude/skills/gog-calendar/
+ls -la ~/.claude/skills/deep-research/
 ls -la ~/.claude/rules/workflow.md
 ls -la ~/.claude/commands/daily-briefing.md
 ```
