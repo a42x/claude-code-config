@@ -196,6 +196,51 @@ Store the results as a list of `{title, url, summary}` objects for use in Step 4
 If `notion_meetings_db_id` is null or not set, skip this step.
 If the MCP call fails, show warning but continue with other data.
 
+### Step 3.7: Invoice Filing Check
+
+毎月の請求書ファイリング状況を簡易チェックする。Step 3 のサブエージェントと並行して実行可能。
+
+**実行条件**: 毎月1日〜15日の間のみ実行（前月分の請求書が届く期間）。それ以外の日はスキップ。
+
+**チェック手順**:
+
+1. Drive の該当月フォルダを確認:
+```bash
+export GOG_KEYRING_PASSWORD="gogcli-keyring"
+# 前月分のフォルダ（例: 今が3月なら「2026.3月」フォルダ）を確認
+gog drive ls --parent 13y2jsuP6MjL27RLuZZp7YKmjMw4C5VGu -a hiro@a42x.co.jp --max 5
+# → 該当フォルダのファイル数を確認
+gog drive ls --parent <該当フォルダID> -a hiro@a42x.co.jp --max 50
+```
+
+2. Gmail で直近の未処理請求書メールを簡易検索:
+```
+mcp__claude_ai_Gmail__gmail_search_messages:
+  q: "(請求書 OR invoice) has:attachment after:YYYY/M-1/25 before:YYYY/M/15"
+  maxResults: 10
+```
+
+3. Drive 上のファイル名リストと Gmail の請求書メール送信元を比較し、**Drive に未アップロードの請求書**を検出する
+
+**出力**: briefing の末尾に以下のセクションを追加:
+
+```
+Invoices:
+  Filed: 15 files in 2026.3月/
+  Unfiled: 3 invoices detected (津田, FINOLAB, 中央総合法律事務所)
+  → Run /file-invoices 2月分 to process
+```
+
+ファイリング済みの場合:
+```
+Invoices: All filed (18 files in 2026.3月/) ✓
+```
+
+15日以降の場合:
+```
+Invoices: (check period ended)
+```
+
 ### Step 4: Format and Display
 
 Combine all agent results + Notion meeting matches into a single formatted output.
@@ -259,6 +304,11 @@ GitHub:
 Slack: No mentions
 Gmail: 2 unread
   - From: dev@example.com "Sprint review notes" (18:00)
+
+━━ Invoices ━━
+  Filed: 15 files in 2026.3月/
+  Unfiled: 3 invoices (津田, FINOLAB, 中央総合法律事務所)
+  → Run /file-invoices 2月分
 ```
 
 #### Calendar Display Rules
