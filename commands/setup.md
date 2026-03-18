@@ -1,5 +1,5 @@
 ---
-description: Initial setup guide for claude-code-config. Run after installation to configure Slack, Google Workspace, and Tavily.
+description: Initial setup guide for claude-code-config. Run after installation to configure Slack, Google Workspace, Tavily, Notion CLI, and File Invoices.
 ---
 
 # Setup Guide
@@ -160,7 +160,52 @@ If not installed:
    ntn api v1/users page_size==1
    ```
 
-## 5. Daily Briefing Setup (Optional)
+## 5. File Invoices Setup (Monthly Accounting)
+
+Required for: `/file-invoices` skill (Gmail → Drive invoice filing).
+
+Prerequisites: Section 2 (gogcli) must be complete.
+
+Check if the skill symlink exists:
+
+```bash
+ls -la ~/.claude/skills/file-invoices/skill.md 2>/dev/null || echo "Not configured"
+```
+
+If not configured:
+
+1. Create the skill symlink:
+   ```bash
+   ln -sf /path/to/claude-code-config/skills/file-invoices ~/.claude/skills/file-invoices
+   ```
+
+2. Copy the example config and customize:
+   ```bash
+   cp ~/.claude/skills/file-invoices/config.example.json ~/.claude/skills/file-invoices/config.json
+   ```
+
+3. Edit `config.json` with your vendor list:
+   - `auto_debit_vendors`: auto-debit vendor classification (credit card, bank transfer)
+   - `html_only_vendors`: vendors with HTML-only receipts (no PDF)
+   - `gmail_platform_searches`: platform-specific Gmail search queries
+   - `url_platform_hints`: download behavior per platform
+
+4. Ensure Playwright MCP is available (needed for URL-based invoice download):
+   ```bash
+   # Check if Playwright plugin is installed
+   ls ~/.claude/plugins/marketplaces/claude-plugins-official/external_plugins/playwright/ 2>/dev/null || echo "Install Playwright from Claude Code plugin marketplace"
+   ```
+
+5. Verify gogcli can access Gmail and Drive:
+   ```bash
+   export GOG_KEYRING_PASSWORD="gogcli-keyring"
+   gog gmail list -a your-account@example.com --max 1
+   gog drive ls --parent YOUR_DRIVE_FOLDER_ID -a your-account@example.com --max 1
+   ```
+
+6. Test: run `/file-invoices 先月` in Claude Code
+
+## 6. Daily Briefing Setup (Optional)
 
 If using the daily briefing command:
 
@@ -172,7 +217,7 @@ If using the daily briefing command:
 2. Edit `~/.claude/commands/daily-briefing-config.json` with your contexts
 3. Test: run `/daily-briefing` in Claude Code
 
-## 6. Verify Installation
+## 7. Verify Installation
 
 ```bash
 # Check symlinks
@@ -180,6 +225,8 @@ ls -la ~/.claude/bin/slack-cli.sh
 ls -la ~/.claude/skills/gog-calendar/
 ls -la ~/.claude/skills/deep-research/
 ls -la ~/.claude/skills/notion-cli/
+ls -la ~/.claude/skills/file-invoices/skill.md
+ls -la ~/.claude/skills/file-invoices/config.json
 ls -la ~/.claude/rules/workflow.md
 ls -la ~/.claude/commands/daily-briefing.md
 ```
