@@ -122,7 +122,45 @@ If not configured:
 3. Restart Claude Code to load the MCP server
 4. Verify: run `/web-research` with a test query
 
-## 4. Daily Briefing Setup (Optional)
+## 4. Notion CLI Setup
+
+Required for: notion-cli skill (`ntn` commands).
+
+Check if `ntn` is installed:
+
+```bash
+ntn --version || echo "Not installed"
+```
+
+If not installed:
+
+1. Install the CLI:
+   ```bash
+   npm i -g ntn@latest
+   ```
+
+2. Get a Notion integration token from https://www.notion.so/profile/integrations
+3. Add `NOTION_API_TOKEN` to `~/.claude/settings.json`:
+   ```json
+   {
+     "env": {
+       "NOTION_API_TOKEN": "ntn_YOUR_TOKEN_HERE"
+     }
+   }
+   ```
+
+4. Create the skill symlink:
+   ```bash
+   ln -sf /path/to/claude-code-config/skills/notion-cli ~/.claude/skills/notion-cli
+   ```
+
+5. Verify:
+   ```bash
+   export NOTION_API_TOKEN="ntn_YOUR_TOKEN_HERE"
+   ntn api v1/users page_size==1
+   ```
+
+## 5. Daily Briefing Setup (Optional)
 
 If using the daily briefing command:
 
@@ -134,13 +172,14 @@ If using the daily briefing command:
 2. Edit `~/.claude/commands/daily-briefing-config.json` with your contexts
 3. Test: run `/daily-briefing` in Claude Code
 
-## 5. Verify Installation
+## 6. Verify Installation
 
 ```bash
 # Check symlinks
 ls -la ~/.claude/bin/slack-cli.sh
 ls -la ~/.claude/skills/gog-calendar/
 ls -la ~/.claude/skills/deep-research/
+ls -la ~/.claude/skills/notion-cli/
 ls -la ~/.claude/rules/workflow.md
 ls -la ~/.claude/commands/daily-briefing.md
 ```
