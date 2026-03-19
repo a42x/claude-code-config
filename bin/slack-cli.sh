@@ -33,6 +33,7 @@ DEFAULT_WS=$(get_config default_workspace)
 # Defaults
 WORKSPACE="$DEFAULT_WS"
 COUNT=10
+OLDEST=""
 POSITIONAL=()
 
 slack_api() {
@@ -143,10 +144,11 @@ print('')
     channel="$ch_id"
   fi
 
+  local api_args=(-d "channel=$channel" -d "limit=$COUNT")
+  [[ -n "$OLDEST" ]] && api_args+=(-d "oldest=$OLDEST")
+
   local result
-  result=$(slack_api "conversations.history" \
-    -d "channel=$channel" \
-    -d "limit=$COUNT")
+  result=$(slack_api "conversations.history" "${api_args[@]}")
 
   python3 -c "
 import json,sys,datetime
@@ -175,6 +177,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --workspace|-w) WORKSPACE="$2"; shift 2 ;;
     --count|-n) COUNT="$2"; shift 2 ;;
+    --oldest|-o) OLDEST="$2"; shift 2 ;;
     --thread-ts|-t) THREAD_TS="$2"; shift 2 ;;
     *) POSITIONAL+=("$1"); shift ;;
   esac
@@ -210,6 +213,7 @@ case "$COMMAND" in
     echo "Options:"
     echo "  --workspace, -w <name>           Workspace (default: $DEFAULT_WS)"
     echo "  --count, -n <num>                Result count (default: 10)"
+    echo "  --oldest, -o <epoch>             Only messages after this Unix timestamp"
     echo "  --thread-ts, -t <ts>             Reply to thread"
     ;;
 esac

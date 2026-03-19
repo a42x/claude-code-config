@@ -13,6 +13,10 @@
         "unread_query": "in:inbox is:unread newer_than:2d",
         "priority_query": "in:inbox is:unread newer_than:2d (label:important OR category:primary)",
         "max_threads": 3
+      },
+      "slack": {
+        "digest_channels": ["general", "dev", "business"],
+        "digest_count": 50
       }
     },
     {
@@ -25,7 +29,8 @@
       "calendar_id": null,
       "gmail": {
         "enabled": false
-      }
+      },
+      "slack": null
     }
   ]
 }

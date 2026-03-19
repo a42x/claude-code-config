@@ -18,6 +18,7 @@ Each context has:
 - `calendar_id` (null = use "primary" if google_account exists)
 - `notion_meetings_db_id` (null = skip Notion meeting matching for completed events)
 - `gmail` (`enabled`, `unread_query`, `priority_query`, `max_threads`)
+- `slack` (`digest_channels`, `digest_count`) — null = skip Slack digest
 
 ### Step 2: Prepare Date
 
@@ -71,6 +72,53 @@ If `auth.test` fails or returns empty, fall back to:
 ```bash
 ~/.claude/bin/slack-cli.sh search "after:yesterday" -w <slack_workspace> -n 5
 ```
+
+**Slack Digest** (only if `slack.digest_channels` is configured and non-null):
+
+Compute the Unix timestamp for today's midnight:
+```bash
+OLDEST=$(python3 -c "from datetime import datetime; print(int(datetime.fromisoformat('<local_today_start>').timestamp()))")
+```
+Where `<local_today_start>` is the local today start string from Step 2 (e.g., `2026-03-19T00:00:00+09:00`).
+
+For each channel in `slack.digest_channels`:
+```bash
+~/.claude/bin/slack-cli.sh history <channel> -w <slack_workspace> -n <slack.digest_count or 50> --oldest $OLDEST
+```
+
+After collecting all channel histories, analyze ALL messages and extract only **important items**:
+
+Extract:
+- **Announcements**: company news, releases, decisions communicated to the team
+- **Action Items**: tasks assigned, deadlines mentioned, requests made
+- **Blockers/Issues**: problems reported, outages, urgent escalations
+- **Key Discussions**: strategic conversations, important questions, decisions being made
+
+Skip:
+- Casual greetings, small talk
+- Simple acknowledgments ("OK", "thanks", "LGTM", emoji-only messages)
+- Bot notifications UNLESS they report failures, outages, or security alerts
+- Duplicate information already covered by other items
+
+For each important item, note: channel name, brief 1-line summary, time (HH:MM).
+
+Return the digest in a `---SLACK_DIGEST---` block:
+```
+---SLACK_DIGEST---
+#channel1 (N messages today):
+- Brief summary of important item (HH:MM)
+- Another important item (HH:MM)
+#channel2 (N messages today):
+- Brief summary (HH:MM)
+```
+
+If no important items found across all channels, return:
+```
+---SLACK_DIGEST---
+All quiet across N channels (M total messages)
+```
+
+If `slack` config is null or `digest_channels` is not set, skip this section entirely and do NOT include a `---SLACK_DIGEST---` block.
 
 **Google Calendar** (only if google_account is not null):
 ```bash
@@ -132,6 +180,8 @@ CONTEXT: <name>
 <github results or "No activity">
 ---SLACK---
 <slack results or "No mentions">
+---SLACK_DIGEST---
+<digest results or omitted if slack.digest_channels not configured>
 ---GMAIL---
 <unread count + top threads or "No unread" or "Skipped">
 ---NOTION---
@@ -292,7 +342,12 @@ GitHub:
   - PR #123 "feat: add validation" (open)
   - Review requested: PR #456 by @teammate
 Slack:
-  - #dev Bug fix request (12:30)
+  Mentions:
+    - #dev Bug fix request (12:30)
+  Digest (3ch, 42 msgs):
+    - [#general] 新パートナー契約締結の報告 (12:30)
+    - [#dev] CI パイプライン障害、調査中 (10:00)
+    - [#business] 提案書締切が金曜に変更 (14:00)
 Gmail: 5 unread
   - From: sender@example.com "Subject line" (09:15)
 
@@ -301,7 +356,9 @@ Gmail: 5 unread
 Calendar: No events
 GitHub:
   - PR #78 "fix: endpoint error" (open)
-Slack: No mentions
+Slack:
+  Mentions: none
+  Digest: All quiet (2 channels)
 Gmail: 2 unread
   - From: dev@example.com "Sprint review notes" (18:00)
 
@@ -325,7 +382,8 @@ Gmail: 2 unread
 
 - Calendar events: Classified as completed (past end time) or upcoming. Completed events show `[done]` prefix with optional meeting log links (Google Docs, Notion). Upcoming events show time (HH:MM-HH:MM) and summary. All-day events show as "All day".
 - GitHub: Show PR/Issue number, title, and status. For review requests show author.
-- Slack: Show channel name and message excerpt (truncated to ~80 chars). Show time.
+- Slack Mentions: Show channel name and message excerpt (truncated to ~80 chars). Show time. If no mentions, show "Mentions: none".
+- Slack Digest: Parse the `---SLACK_DIGEST---` block from the subagent. Show as "Digest (Nch, M msgs):" followed by important items with `[#channel]` prefix. Max 10 items. If `slack.digest_channels` is not configured, omit the Digest sub-section entirely (show only mentions as before). If no important items found, show "Digest: All quiet (N channels)".
 - Gmail: Show "X unread" + up to 3 important threads (sender, subject, time). Keep concise.
 - If any data source fails, show error message but continue with other sources.
 - Keep it concise - this is a quick morning overview.
