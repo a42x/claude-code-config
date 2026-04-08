@@ -88,7 +88,7 @@ Use these labels consistently:
 
 ## 出力ファイル
 
-最終レポートは Write ツールで `tmp/trend-scan-YYYY-MM-DD.md` に書き出す（YYYY-MM-DD は実行日）。レスポンス末尾にファイルパスを明記し、ユーザーが直接閲覧できるようにする。
+最終レポートは Write ツールで `inbox/trend-scan-YYYY-MM-DD-[topic].md` に書き出す（YYYY-MM-DD は実行日、[topic] は調査トピックの短い英語記述）。ソース素材として inbox/ に入れることで、/pipeline の処理対象となる。レスポンス末尾にファイルパスを明記し、ユーザーが直接閲覧できるようにする。
 
 ## Output contract
 
